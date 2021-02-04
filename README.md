@@ -2,6 +2,9 @@ django-ordered-model
 ====================
 
 [![Build Status](https://secure.travis-ci.org/bfirsh/django-ordered-model.png?branch=master)](https://travis-ci.org/bfirsh/django-ordered-model)
+[![PyPI version](https://badge.fury.io/py/django-ordered-model.svg)](https://badge.fury.io/py/django-ordered-model)
+[![codecov](https://codecov.io/gh/bfirsh/django-ordered-model/branch/master/graph/badge.svg)](https://codecov.io/gh/bfirsh/django-ordered-model)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
 
 django-ordered-model allows models to be ordered and provides a simple admin
 interface for reordering them.
@@ -14,11 +17,15 @@ See our [compatability notes](#compatibility-with-django-and-python) for the app
 Installation
 ------------
 
-    $ python setup.py install
+```bash
+$ python setup.py install
+```
 
 You can use Pip:
 
-    $ pip install django-ordered-model
+```bash
+$ pip install django-ordered-model
+```
 
 Usage
 -----
@@ -49,7 +56,7 @@ bar = Item.objects.create(name="Bar")
 
 ### Swap positions
 
-```
+```python
 foo.swap(bar)
 ```
 
@@ -108,17 +115,17 @@ the order value of all objects that were below the moved object by one.
 
 ### Updating fields that would be updated during save()
 
-For performance reasons, the delete(), to(), below(), above(), top(), and bottom()
-methods use Django's update() method to change the order of other objects that
-are shifted as a result of one of these calls. If the model has fields that
+For performance reasons, the `delete()`, `to()`, `below()`, `above()`, `top()`, and
+`bottom()` methods use Django's `update()` method to change the order of other objects
+that are shifted as a result of one of these calls. If the model has fields that
 are typically updated in a customized save() method, or through other app level
-functionality such as DateTimeField(auto_now=True), you can add additional fields
-to be passed through to update(). This will only impact objects where their order
+functionality such as `DateTimeField(auto_now=True)`, you can add additional fields
+to be passed through to `update()`. This will only impact objects where their order
 is being shifted as a result of an operation on the target object, not the target
 object itself.
 
 ```python
-foo.to(12, extra_update={'modified': now()}
+foo.to(12, extra_update={'modified': now()})
 ```
 
 ### Get the previous or next objects
@@ -215,7 +222,44 @@ class OpenQuestion(BaseQuestion):
     answer = models.TextField(max_length=100)
 ```
 
+Custom Manager and QuerySet
+-----------------
+When your model your extends `OrderedModel`, it inherits a custom `ModelManager` instance, `OrderedModelManager`, which provides additional  operations on the resulting `QuerySet`. For example an `OrderedModel` subclass called `Item` that returns a queryset from `Item.objects.all()` supports the following functions:
 
+* `above_instance(object)`,
+* `below_instance(object)`,
+* `get_min_order()`,
+* `get_max_order()`,
+* `above(index)`,
+* `below(index)`
+
+If your model defines a custom `ModelManager` such as `ItemManager` below, you may wish to extend `OrderedModelManager` to retain those functions, as follows:
+
+```python
+from ordered_model.models import OrderedModelManager, OrderedModel
+
+class ItemManager(OrderedModelManager):
+    pass
+
+class Item(OrderedModel):
+    objects = ItemManager()
+```
+
+Custom ordering field
+---------------------
+Extending `OrderedModel` creates a `models.PositiveIntegerField` field called `order` and the appropriate migrations. If you wish to use an existing model field to store the ordering, you can set the attribute `order_field_name` to match your field name:
+
+```python
+class MyModel(OrderedModelBase):
+    ...
+    sort_order = models.PositiveIntegerField(editable=False, db_index=True)
+    order_field_name = "sort_order"
+
+    class Meta:
+        ordering = ("sort_order",)
+```
+
+See `tests/models.py` object `CustomOrderFieldModel` for an example.
 
 
 Admin integration
@@ -235,7 +279,6 @@ class ItemAdmin(OrderedModelAdmin):
 
 admin.site.register(Item, ItemAdmin)
 ```
-
 
 For a many-to-many relationship you need one of the following inlines.
 
@@ -264,7 +307,6 @@ class PizzaAdmin(OrderedInlineModelAdminMixin, admin.ModelAdmin):
 
 admin.site.register(Pizza, PizzaAdmin)
 ```
-
 
 For the `OrderedStackedInline` it will look like this:
 
@@ -295,15 +337,18 @@ Test suite
 
 Requires Docker.
 
-    $ script/test
-
-
+```bash
+$ script/test
+```
 
 Compatibility with Django and Python
 -----------------------------------------
 
 |django-ordered-model version | Django version      | Python version
 |-----------------------------|---------------------|--------------------
+| **3.4.x**                   | **2.x**             | **3.5** and above
+| **3.3.x**                   | **2.x**             | **3.4** and above
+| **3.2.x**                   | **2.x**             | **3.4** and above
 | **3.1.x**                   | **2.x**             | **3.4** and above
 | **3.0.x**                   | **2.x**             | **3.4** and above
 | **2.1.x**                   | **1.x**             | **2.7** to **3.6**

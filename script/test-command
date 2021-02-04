@@ -1,2 +1,0 @@
-#!/bin/sh
-django-admin.py test --pythonpath=. --settings=tests.settings
